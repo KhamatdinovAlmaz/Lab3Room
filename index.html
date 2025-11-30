@@ -74,61 +74,22 @@
 				scene.add( ambientLight );
 				scene.add( light );
 
-				// ТЕКСТУРЫ КОМНАТЫ
+				// ТЕКСТУРЫ КОМНАТЫ - ИСПОЛЬЗУЕМ ПРАВИЛЬНЫЕ НАЗВАНИЯ
 				var materials = [];
 				var textureLoader = new THREE.TextureLoader();
 				
-				// Добавляем обработчики ошибок для текстур
-				textureLoader.load = function ( url, onLoad, onProgress, onError ) {
-					var texture = new THREE.Texture();
-					var image = new Image();
-					
-					image.onload = function () {
-						texture.image = image;
-						texture.needsUpdate = true;
-						if ( onLoad ) onLoad( texture );
-					};
-					
-					image.onerror = function ( event ) {
-						console.error( 'Ошибка загрузки текстуры:', url, event );
-						// Создаем цветную текстуру вместо отсутствующей
-						var canvas = document.createElement( 'canvas' );
-						canvas.width = 4;
-						canvas.height = 4;
-						var context = canvas.getContext( '2d' );
-						context.fillStyle = '#ff0000'; // Красный цвет для отсутствующих текстур
-						context.fillRect( 0, 0, 4, 4 );
-						texture.image = canvas;
-						texture.needsUpdate = true;
-						if ( onLoad ) onLoad( texture );
-					};
-					
-					image.crossOrigin = "anonymous"; // Решаем проблему CORS
-					image.src = url;
-					return texture;
-				};
-
-				// Ваши текстуры в правильном порядке для BoxGeometry
+				// Правильные названия файлов из вашего репозитория
 				var textureFiles = [
-					'./models/what.jpg',      // правая стена
-					'./models/what.jpg',      // левая стена  
-					'./models/Ready.jpg',     // потолок
-					'./models/new.jpg',       // пол
-					'./models/window.jpg',    // передняя стена
-					'./models/shift.jpg'      // задняя стена
+					'models/wind.jpg',          // правая стена
+					'models/wind.jpg',          // левая стена  
+					'models/Root.jpg',          // потолок
+					'models/instruments.jpg',   // пол
+					'models/window.jpg',        // передняя стена
+					'models/shells.jpg'         // задняя стена
 				];
 
 				for ( let i = 0; i < 6; i++ ) {
-					var texture = textureLoader.load( textureFiles[i], 
-						function(texture) {
-							console.log('Текстура загружена:', this);
-						}.bind(textureFiles[i]),
-						undefined,
-						function(err) {
-							console.error('Ошибка загрузки:', this, err);
-						}.bind(textureFiles[i])
-					);
-					
+					var texture = textureLoader.load( textureFiles[i] );
 					var material = new THREE.MeshPhongMaterial( 
               			{ map: texture, side: THREE.BackSide } 
 					);
@@ -191,4 +152,5 @@
 		</script>
 	</body>
 </html>
+
 
