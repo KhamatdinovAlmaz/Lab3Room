@@ -76,77 +76,44 @@
 			function createRoom() {
 				const textureLoader = new THREE.TextureLoader();
 				
-				// Массив для материалов комнаты
+				// Создаем материалы для каждой стороны комнаты
 				const materials = [];
 				
-				// Правильные названия файлов для каждой стороны комнаты
-				const textureUrls = [
-					'models/whall.jpg',        // правая стена (X+)
-					'models/instruments.jpg',  // левая стена (X-) - инструменты
-					'models/roof.jpg',         // потолок (Y+)
-					'models/floor.jpg',        // пол (Y-)
-					'models/window.jpg',       // передняя стена (Z+)
-					'models/shelfs.jpg'        // задняя стена (Z-)
-				];
-
-				let loadedTextures = 0;
-				const totalTextures = 6;
-
-				// Загружаем каждую текстуру
-				for (let i = 0; i < totalTextures; i++) {
-					const texture = textureLoader.load(
-						textureUrls[i],
-						// Функция успешной загрузки
-						function() {
-							loadedTextures++;
-							console.log('Текстура загружена: ' + textureUrls[i] + ' (' + loadedTextures + '/' + totalTextures + ')');
-							
-							// Если все текстуры загружены, создаем комнату
-							if (loadedTextures === totalTextures) {
-								createRoomMesh(materials);
-							}
-						},
-						// Функция прогресса загрузки
-						undefined,
-						// Функция ошибки
-						function(error) {
-							console.error('Ошибка загрузки текстуры:', textureUrls[i], error);
-							// Создаем цветной материал вместо текстуры
-							const colors = [0x888888, 0x666666, 0xAAAAAA, 0x964B00, 0x87CEEB, 0x556B2F];
-							materials[i] = new THREE.MeshBasicMaterial({ 
-								color: colors[i], 
-								side: THREE.BackSide 
-							});
-							loadedTextures++;
-							
-							if (loadedTextures === totalTextures) {
-								createRoomMesh(materials);
-							}
-						}
-					);
-
-					const material = new THREE.MeshBasicMaterial({ 
-						map: texture, 
-						side: THREE.BackSide 
-					});
-					
-					// Настройки для текстуры пола
-					if (i === 3) { // пол
-						texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-						texture.repeat.set(3, 3);
-					}
-					
-					materials.push(material);
-				}
-			}
-
-			function createRoomMesh(materials) {
-				console.log('Создаем геометрию комнаты');
+				// Загружаем текстуры и создаем материалы
+				const whallTexture = textureLoader.load('models/whall.jpg');
+				const instrumentsTexture = textureLoader.load('models/instruments.jpg');
+				const roofTexture = textureLoader.load('models/roof.jpg');
+				const floorTexture = textureLoader.load('models/floor.jpg');
+				const windowTexture = textureLoader.load('models/window.jpg');
+				const shelfsTexture = textureLoader.load('models/shelfs.jpg');
+				
+				// Настраиваем повторение для пола
+				floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
+				floorTexture.repeat.set(3, 3);
+				
+				// Создаем материалы для каждой стороны
+				// THREE.BoxGeometry использует следующий порядок материалов:
+				// 0: правая стена (X+)
+				// 1: левая стена (X-) - используем instruments.jpg для стены с инструментами
+				// 2: верхняя сторона (Y+) - потолок
+				// 3: нижняя сторона (Y-) - пол
+				// 4: передняя сторона (Z+)
+				// 5: задняя сторона (Z-)
+				
+				materials.push(
+					new THREE.MeshBasicMaterial({ map: whallTexture, side: THREE.BackSide }),     // правая стена
+					new THREE.MeshBasicMaterial({ map: instrumentsTexture, side: THREE.BackSide }), // левая стена с инструментами
+					new THREE.MeshBasicMaterial({ map: roofTexture, side: THREE.BackSide }),      // потолок
+					new THREE.MeshBasicMaterial({ map: floorTexture, side: THREE.BackSide }),     // пол
+					new THREE.MeshBasicMaterial({ map: windowTexture, side: THREE.BackSide }),    // передняя стена с окном
+					new THREE.MeshBasicMaterial({ map: shelfsTexture, side: THREE.BackSide })     // задняя стена с полками
+				);
 				
 				// Создаем геометрию комнаты
 				const roomGeometry = new THREE.BoxGeometry(5000, 5000, 5000);
 				const room = new THREE.Mesh(roomGeometry, materials);
 				scene.add(room);
+				
 				console.log('Комната создана');
 			}
 
@@ -190,5 +157,6 @@
 		</script>
 	</body>
 </html>
+
 
 
