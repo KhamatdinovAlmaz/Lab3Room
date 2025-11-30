@@ -45,14 +45,12 @@
 				camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
 				camera.position.set(0, 0, 3000);
 
-				// Рендерер с улучшенными настройками
+				// Рендерер
 				renderer = new THREE.WebGLRenderer({ 
-					antialias: true,
-					alpha: true
+					antialias: true
 				});
 				renderer.setPixelRatio(window.devicePixelRatio);
 				renderer.setSize(window.innerWidth, window.innerHeight);
-				renderer.outputEncoding = THREE.sRGBEncoding;
 				document.body.appendChild(renderer.domElement);
 
 				// Освещение
@@ -62,11 +60,6 @@
 				const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
 				directionalLight.position.set(1, 1, 1);
 				scene.add(directionalLight);
-
-				// Дополнительное освещение для лучшего отображения модели
-				const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
-				fillLight.position.set(-1, 0.5, -1);
-				scene.add(fillLight);
 
 				// Элементы управления
 				controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -96,13 +89,6 @@
 				const floorTexture = textureLoader.load('models/floor.jpg');
 				const windowTexture = textureLoader.load('models/window.jpg');
 				const shelfsTexture = textureLoader.load('models/shelfs.jpg');
-				
-				// Улучшаем качество текстур
-				[whallTexture, instrumentsTexture, roofTexture, floorTexture, windowTexture, shelfsTexture].forEach(texture => {
-					texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-					texture.minFilter = THREE.LinearFilter;
-					texture.magFilter = THREE.LinearFilter;
-				});
 				
 				// Настраиваем повторение для пола
 				floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
@@ -134,19 +120,14 @@
 					}
 				};
 
+				const onError = function(error) {
+					console.error('Ошибка загрузки модели учителя:', error);
+				};
+
 				const mtlLoader = new THREE.MTLLoader();
 				mtlLoader.setPath('https://threejs.org/examples/models/obj/male02/');
 				mtlLoader.load('male02.mtl', function(materials) {
 					materials.preload();
-					
-					// Улучшаем материалы модели
-					materials.materials.forEach(material => {
-						if (material.map) {
-							material.map.anisotropy = renderer.capabilities.getMaxAnisotropy();
-							material.map.minFilter = THREE.LinearFilter;
-							material.map.magFilter = THREE.LinearFilter;
-						}
-					});
 
 					const objLoader = new THREE.OBJLoader();
 					objLoader.setMaterials(materials);
@@ -156,25 +137,18 @@
 						object.rotation.y = Math.PI / 2;
 						object.scale.setScalar(10);
 						
-						// Улучшаем рендеринг модели
+						// Простая обработка модели без изменения материалов
 						object.traverse(function(child) {
 							if (child.isMesh) {
-								child.castShadow = true;
-								child.receiveShadow = true;
-								
-								// Улучшаем материал если он есть
-								if (child.material) {
-									child.material.transparent = false;
-									child.material.depthWrite = true;
-									child.material.alphaTest = 0.5;
-								}
+								// Устанавливаем рендеринг без прозрачности
+								child.material.transparent = false;
 							}
 						});
 						
 						scene.add(object);
-						console.log('Модель учителя загружена и улучшена');
-					}, onProgress);
-				});
+						console.log('Модель учителя загружена');
+					}, onProgress, onError);
+				}, onProgress, onError);
 			}
 
 			function onWindowResize() {
@@ -191,3 +165,4 @@
 		</script>
 	</body>
 </html>
+
