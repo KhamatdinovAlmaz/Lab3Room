@@ -1,154 +1,192 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>three.js webgl - модель помещения</title>
+		<title>Модель помещения</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<link type="text/css" rel="stylesheet" href="https://threejs.org/examples/main.css">
+		<style>
+			body { 
+				margin: 0; 
+				overflow: hidden; 
+				background-color: #D3D3D3;
+			}
+			#info {
+				position: absolute;
+				top: 10px;
+				width: 100%;
+				text-align: center;
+				color: white;
+				font-family: Arial, sans-serif;
+				z-index: 100;
+				text-shadow: 1px 1px 2px black;
+			}
+		</style>
 	</head>
 	<body>
-		<div id="info">
-			Модель помещения
-		</div>
+		<div id="info">Модель помещения</div>
 
-		<script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/MTLLoader.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
 
-		<script type="importmap">
-			{
-				"imports": {
-					"three": "https://threejs.org/build/three.module.js",
-					"three/addons/": "https://threejs.org/examples/jsm/"
-				}
-			}
-		</script>
-		<script type="module">
+		<script>
+			let camera, scene, renderer, controls;
 
-			import * as THREE from 'three';
-			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-			import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
-			import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
-
-			var camera, scene, renderer;
-			var controls;
-			var ambientLight, light;
-          	let object;
 			init();
 			animate();
 
 			function init() {
-
-				var container = document.createElement( 'div' );
-				document.body.appendChild( container );
-
-				// CAMERA
-				camera = new THREE.PerspectiveCamera( 65, window.innerWidth / window.innerHeight, 1, 80000 );
-              
-				// LIGHTS
-				ambientLight = new THREE.AmbientLight( 0x333333, 50 );
-				light = new THREE.DirectionalLight( 0xFFFFFF, 1.0 );
-				light.position.set( 1, 1, 1 );
-
-				// RENDERER
-				renderer = new THREE.WebGLRenderer( { antialias: true } );
-				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( window.innerWidth, window.innerHeight );
-				container.appendChild( renderer.domElement );
-
-				// EVENTS
-				window.addEventListener( 'resize', onWindowResize, false );
-
-				// CONTROLS
-				controls = new OrbitControls( camera, renderer.domElement );
-				controls.addEventListener( 'change', render );
-				controls.enableZoom = true;  
-				controls.zoomSpeed = 0.5;  
-				controls.minDistance = 500;
-				controls.maxDistance = 5000;
-				controls.enableDamping = true;
-				camera.position.set( 0, -500, 2900 );
-			    controls.target.set( 50, 0, 50 );
-
-				// SCENE
+				// Сцена
 				scene = new THREE.Scene();
-				scene.background = new THREE.Color( 0xD3D3D3 );
-				scene.add( ambientLight );
-				scene.add( light );
+				scene.background = new THREE.Color(0xD3D3D3);
 
-				// ТЕКСТУРЫ КОМНАТЫ - ИСПОЛЬЗУЕМ ПРАВИЛЬНЫЕ НАЗВАНИЯ
-				var materials = [];
-				var textureLoader = new THREE.TextureLoader();
+				// Камера
+				camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+				camera.position.set(0, 0, 3000);
+
+				// Рендерер
+				renderer = new THREE.WebGLRenderer({ antialias: true });
+				renderer.setSize(window.innerWidth, window.innerHeight);
+				document.body.appendChild(renderer.domElement);
+
+				// Освещение
+				const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+				scene.add(ambientLight);
+
+				const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+				directionalLight.position.set(1, 1, 1);
+				scene.add(directionalLight);
+
+				// Элементы управления
+				controls = new THREE.OrbitControls(camera, renderer.domElement);
+				controls.enableDamping = true;
+				controls.dampingFactor = 0.05;
+
+				// Создаем комнату
+				createRoom();
+
+				// Добавляем модель учителя
+				loadTeacher();
+
+				// Обработчик изменения размера окна
+				window.addEventListener('resize', onWindowResize);
+			}
+
+			function createRoom() {
+				const textureLoader = new THREE.TextureLoader();
 				
-				// Правильные названия файлов из вашего репозитория
-				var textureFiles = [
-					'models/wind.jpg',          // правая стена
-					'models/wind.jpg',          // левая стена  
-					'models/Root.jpg',          // потолок
-					'models/instruments.jpg',   // пол
-					'models/window.jpg',        // передняя стена
-					'models/shells.jpg'         // задняя стена
+				// Массив для материалов комнаты
+				const materials = [];
+				
+				// Правильные названия файлов для каждой стороны комнаты
+				const textureUrls = [
+					'models/whall.jpg',        // правая стена (X+)
+					'models/instruments.jpg',  // левая стена (X-) - инструменты
+					'models/roof.jpg',         // потолок (Y+)
+					'models/floor.jpg',        // пол (Y-)
+					'models/window.jpg',       // передняя стена (Z+)
+					'models/shelfs.jpg'        // задняя стена (Z-)
 				];
 
-				for ( let i = 0; i < 6; i++ ) {
-					var texture = textureLoader.load( textureFiles[i] );
-					var material = new THREE.MeshPhongMaterial( 
-              			{ map: texture, side: THREE.BackSide } 
-					);
-                  	texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-                  	texture.repeat.x = -1;
-                  
-                  	// Настройки для пола (индекс 3)
-                  	if (i === 3) {
-                  		texture.repeat.set( 3, 3 );
-                  		texture.offset.set(0.05, 0.2);
-                  	}
-					materials.push( material );
-				}              
-              
-				var geometry = new THREE.BoxGeometry( 5000, 5000, 5000 );		
-				var Cube = new THREE.Mesh( geometry, materials );
-				Cube.position.y = 100;
-				scene.add( Cube );
+				let loadedTextures = 0;
+				const totalTextures = 6;
 
-				// МОДЕЛЬ УЧИТЕЛЯ
-				const onProgress = function ( xhr ) {
-					if ( xhr.lengthComputable ) {
+				// Загружаем каждую текстуру
+				for (let i = 0; i < totalTextures; i++) {
+					const texture = textureLoader.load(
+						textureUrls[i],
+						// Функция успешной загрузки
+						function() {
+							loadedTextures++;
+							console.log('Текстура загружена: ' + textureUrls[i] + ' (' + loadedTextures + '/' + totalTextures + ')');
+							
+							// Если все текстуры загружены, создаем комнату
+							if (loadedTextures === totalTextures) {
+								createRoomMesh(materials);
+							}
+						},
+						// Функция прогресса загрузки
+						undefined,
+						// Функция ошибки
+						function(error) {
+							console.error('Ошибка загрузки текстуры:', textureUrls[i], error);
+							// Создаем цветной материал вместо текстуры
+							const colors = [0x888888, 0x666666, 0xAAAAAA, 0x964B00, 0x87CEEB, 0x556B2F];
+							materials[i] = new THREE.MeshBasicMaterial({ 
+								color: colors[i], 
+								side: THREE.BackSide 
+							});
+							loadedTextures++;
+							
+							if (loadedTextures === totalTextures) {
+								createRoomMesh(materials);
+							}
+						}
+					);
+
+					const material = new THREE.MeshBasicMaterial({ 
+						map: texture, 
+						side: THREE.BackSide 
+					});
+					
+					// Настройки для текстуры пола
+					if (i === 3) { // пол
+						texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+						texture.repeat.set(3, 3);
+					}
+					
+					materials.push(material);
+				}
+			}
+
+			function createRoomMesh(materials) {
+				console.log('Создаем геометрию комнаты');
+				
+				// Создаем геометрию комнаты
+				const roomGeometry = new THREE.BoxGeometry(5000, 5000, 5000);
+				const room = new THREE.Mesh(roomGeometry, materials);
+				scene.add(room);
+				console.log('Комната создана');
+			}
+
+			function loadTeacher() {
+				const onProgress = function(xhr) {
+					if (xhr.lengthComputable) {
 						const percentComplete = xhr.loaded / xhr.total * 100;
-						console.log( percentComplete.toFixed( 2 ) + '% downloaded' );
+						console.log('Модель учителя: ' + percentComplete.toFixed(2) + '% загружено');
 					}
 				};
 
-				new MTLLoader()
-					.setPath( 'https://threejs.org/examples/models/obj/male02/' )
-					.load( 'male02.mtl', function ( materials ) {
-						materials.preload();
-						new OBJLoader()
-							.setMaterials( materials )
-							.setPath( 'https://threejs.org/examples/models/obj/male02/' )
-							.load( 'male02.obj', function ( object ) {
-								object.position.set (-1500, -2400, -200 );
-                                object.rotation.y = Math.PI / 2;
-								object.scale.setScalar( 10 );
-								scene.add( object );
-							}, onProgress );
-					} );             
+				const mtlLoader = new THREE.MTLLoader();
+				mtlLoader.setPath('https://threejs.org/examples/models/obj/male02/');
+				mtlLoader.load('male02.mtl', function(materials) {
+					materials.preload();
+
+					const objLoader = new THREE.OBJLoader();
+					objLoader.setMaterials(materials);
+					objLoader.setPath('https://threejs.org/examples/models/obj/male02/');
+					objLoader.load('male02.obj', function(object) {
+						object.position.set(-1500, -2400, -200);
+						object.rotation.y = Math.PI / 2;
+						object.scale.setScalar(10);
+						scene.add(object);
+						console.log('Модель учителя загружена');
+					}, onProgress);
+				});
 			}
 
 			function onWindowResize() {
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
-				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setSize(window.innerWidth, window.innerHeight);
 			}
 
 			function animate() {
-				requestAnimationFrame( animate );
+				requestAnimationFrame(animate);
 				controls.update();
-				render();
+				renderer.render(scene, camera);
 			}
-
-			function render() {
-				renderer.render( scene, camera );
-			}			
-
 		</script>
 	</body>
 </html>
