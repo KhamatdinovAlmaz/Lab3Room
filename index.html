@@ -92,14 +92,6 @@
 				floorTexture.repeat.set(3, 3);
 				
 				// Создаем материалы для каждой стороны
-				// THREE.BoxGeometry использует следующий порядок материалов:
-				// 0: правая стена (X+)
-				// 1: левая стена (X-) - используем instruments.jpg для стены с инструментами
-				// 2: верхняя сторона (Y+) - потолок
-				// 3: нижняя сторона (Y-) - пол
-				// 4: передняя сторона (Z+)
-				// 5: задняя сторона (Z-)
-				
 				materials.push(
 					new THREE.MeshBasicMaterial({ map: whallTexture, side: THREE.BackSide }),     // правая стена
 					new THREE.MeshBasicMaterial({ map: instrumentsTexture, side: THREE.BackSide }), // левая стена с инструментами
@@ -125,10 +117,23 @@
 					}
 				};
 
+				const onError = function(error) {
+					console.error('Ошибка загрузки модели учителя:', error);
+				};
+
 				const mtlLoader = new THREE.MTLLoader();
 				mtlLoader.setPath('https://threejs.org/examples/models/obj/male02/');
 				mtlLoader.load('male02.mtl', function(materials) {
 					materials.preload();
+
+					// Улучшаем материалы модели
+					for (const materialName in materials.materials) {
+						const material = materials.materials[materialName];
+						// Устанавливаем материал непрозрачным
+						material.transparent = false;
+						material.opacity = 1.0;
+						material.alphaTest = 0.5;
+					}
 
 					const objLoader = new THREE.OBJLoader();
 					objLoader.setMaterials(materials);
@@ -137,10 +142,21 @@
 						object.position.set(-1500, -2400, -200);
 						object.rotation.y = Math.PI / 2;
 						object.scale.setScalar(10);
+						
+						// Убеждаемся, что все материалы непрозрачны
+						object.traverse(function(child) {
+							if (child.isMesh && child.material) {
+								child.material.transparent = false;
+								child.material.opacity = 1.0;
+								child.material.depthWrite = true;
+								child.material.alphaTest = 0.1;
+							}
+						});
+						
 						scene.add(object);
-						console.log('Модель учителя загружена');
-					}, onProgress);
-				});
+						console.log('Модель учителя загружена и улучшена');
+					}, onProgress, onError);
+				}, onProgress, onError);
 			}
 
 			function onWindowResize() {
