@@ -45,9 +45,14 @@
 				camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
 				camera.position.set(0, 0, 3000);
 
-				// Рендерер
-				renderer = new THREE.WebGLRenderer({ antialias: true });
+				// Рендерер с улучшенными настройками
+				renderer = new THREE.WebGLRenderer({ 
+					antialias: true,
+					alpha: true
+				});
+				renderer.setPixelRatio(window.devicePixelRatio);
 				renderer.setSize(window.innerWidth, window.innerHeight);
+				renderer.outputEncoding = THREE.sRGBEncoding;
 				document.body.appendChild(renderer.domElement);
 
 				// Освещение
@@ -57,6 +62,11 @@
 				const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
 				directionalLight.position.set(1, 1, 1);
 				scene.add(directionalLight);
+
+				// Дополнительное освещение для лучшего отображения модели
+				const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
+				fillLight.position.set(-1, 0.5, -1);
+				scene.add(fillLight);
 
 				// Элементы управления
 				controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -87,19 +97,18 @@
 				const windowTexture = textureLoader.load('models/window.jpg');
 				const shelfsTexture = textureLoader.load('models/shelfs.jpg');
 				
+				// Улучшаем качество текстур
+				[whallTexture, instrumentsTexture, roofTexture, floorTexture, windowTexture, shelfsTexture].forEach(texture => {
+					texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+					texture.minFilter = THREE.LinearFilter;
+					texture.magFilter = THREE.LinearFilter;
+				});
+				
 				// Настраиваем повторение для пола
 				floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
 				floorTexture.repeat.set(3, 3);
 				
 				// Создаем материалы для каждой стороны
-				// THREE.BoxGeometry использует следующий порядок материалов:
-				// 0: правая стена (X+)
-				// 1: левая стена (X-) - используем instruments.jpg для стены с инструментами
-				// 2: верхняя сторона (Y+) - потолок
-				// 3: нижняя сторона (Y-) - пол
-				// 4: передняя сторона (Z+)
-				// 5: задняя сторона (Z-)
-				
 				materials.push(
 					new THREE.MeshBasicMaterial({ map: whallTexture, side: THREE.BackSide }),     // правая стена
 					new THREE.MeshBasicMaterial({ map: instrumentsTexture, side: THREE.BackSide }), // левая стена с инструментами
@@ -129,6 +138,15 @@
 				mtlLoader.setPath('https://threejs.org/examples/models/obj/male02/');
 				mtlLoader.load('male02.mtl', function(materials) {
 					materials.preload();
+					
+					// Улучшаем материалы модели
+					materials.materials.forEach(material => {
+						if (material.map) {
+							material.map.anisotropy = renderer.capabilities.getMaxAnisotropy();
+							material.map.minFilter = THREE.LinearFilter;
+							material.map.magFilter = THREE.LinearFilter;
+						}
+					});
 
 					const objLoader = new THREE.OBJLoader();
 					objLoader.setMaterials(materials);
@@ -137,8 +155,24 @@
 						object.position.set(-1500, -2400, -200);
 						object.rotation.y = Math.PI / 2;
 						object.scale.setScalar(10);
+						
+						// Улучшаем рендеринг модели
+						object.traverse(function(child) {
+							if (child.isMesh) {
+								child.castShadow = true;
+								child.receiveShadow = true;
+								
+								// Улучшаем материал если он есть
+								if (child.material) {
+									child.material.transparent = false;
+									child.material.depthWrite = true;
+									child.material.alphaTest = 0.5;
+								}
+							}
+						});
+						
 						scene.add(object);
-						console.log('Модель учителя загружена');
+						console.log('Модель учителя загружена и улучшена');
 					}, onProgress);
 				});
 			}
@@ -157,6 +191,3 @@
 		</script>
 	</body>
 </html>
-
-
-
