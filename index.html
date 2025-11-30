@@ -46,10 +46,7 @@
 				camera.position.set(0, 0, 3000);
 
 				// Рендерер
-				renderer = new THREE.WebGLRenderer({ 
-					antialias: true
-				});
-				renderer.setPixelRatio(window.devicePixelRatio);
+				renderer = new THREE.WebGLRenderer({ antialias: true });
 				renderer.setSize(window.innerWidth, window.innerHeight);
 				document.body.appendChild(renderer.domElement);
 
@@ -96,23 +93,23 @@
 				
 				// Создаем материалы для каждой стороны
 				materials.push(
-					new THREE.MeshBasicMaterial({ map: whallTexture, side: THREE.BackSide }),     // правая стена
-					new THREE.MeshBasicMaterial({ map: instrumentsTexture, side: THREE.BackSide }), // левая стена с инструментами
-					new THREE.MeshBasicMaterial({ map: roofTexture, side: THREE.BackSide }),      // потолок
-					new THREE.MeshBasicMaterial({ map: floorTexture, side: THREE.BackSide }),     // пол
-					new THREE.MeshBasicMaterial({ map: windowTexture, side: THREE.BackSide }),    // передняя стена с окном
-					new THREE.MeshBasicMaterial({ map: shelfsTexture, side: THREE.BackSide })     // задняя стена с полками
+					new THREE.MeshBasicMaterial({ map: whallTexture, side: THREE.BackSide }),
+					new THREE.MeshBasicMaterial({ map: instrumentsTexture, side: THREE.BackSide }),
+					new THREE.MeshBasicMaterial({ map: roofTexture, side: THREE.BackSide }),
+					new THREE.MeshBasicMaterial({ map: floorTexture, side: THREE.BackSide }),
+					new THREE.MeshBasicMaterial({ map: windowTexture, side: THREE.BackSide }),
+					new THREE.MeshBasicMaterial({ map: shelfsTexture, side: THREE.BackSide })
 				);
 				
 				// Создаем геометрию комнаты
 				const roomGeometry = new THREE.BoxGeometry(5000, 5000, 5000);
 				const room = new THREE.Mesh(roomGeometry, materials);
 				scene.add(room);
-				
-				console.log('Комната создана');
 			}
 
 			function loadTeacher() {
+				console.log("Начинаем загрузку учителя...");
+				
 				const onProgress = function(xhr) {
 					if (xhr.lengthComputable) {
 						const percentComplete = xhr.loaded / xhr.total * 100;
@@ -124,31 +121,31 @@
 					console.error('Ошибка загрузки модели учителя:', error);
 				};
 
-				const mtlLoader = new THREE.MTLLoader();
-				mtlLoader.setPath('https://threejs.org/examples/models/obj/male02/');
-				mtlLoader.load('male02.mtl', function(materials) {
-					materials.preload();
-
-					const objLoader = new THREE.OBJLoader();
-					objLoader.setMaterials(materials);
-					objLoader.setPath('https://threejs.org/examples/models/obj/male02/');
-					objLoader.load('male02.obj', function(object) {
+				// Простая загрузка OBJ без MTL материалов
+				const objLoader = new THREE.OBJLoader();
+				objLoader.load(
+					'https://threejs.org/examples/models/obj/male02/male02.obj',
+					function(object) {
+						console.log("Модель учителя успешно загружена");
 						object.position.set(-1500, -2400, -200);
 						object.rotation.y = Math.PI / 2;
 						object.scale.setScalar(10);
 						
-						// Простая обработка модели без изменения материалов
+						// Добавляем простой материал, если у модели нет своего
 						object.traverse(function(child) {
 							if (child.isMesh) {
-								// Устанавливаем рендеринг без прозрачности
-								child.material.transparent = false;
+								if (!child.material) {
+									child.material = new THREE.MeshBasicMaterial({ color: 0x888888 });
+								}
 							}
 						});
 						
 						scene.add(object);
-						console.log('Модель учителя загружена');
-					}, onProgress, onError);
-				}, onProgress, onError);
+						console.log("Учитель добавлен в сцену");
+					},
+					onProgress,
+					onError
+				);
 			}
 
 			function onWindowResize() {
@@ -165,4 +162,3 @@
 		</script>
 	</body>
 </html>
-
